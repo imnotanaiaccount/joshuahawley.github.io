@@ -220,7 +220,7 @@
                 ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
                 
                 // Add glow effect
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 20;
                 ctx.shadowColor = square.color;
                 ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
                 ctx.shadowBlur = 0;
@@ -309,7 +309,7 @@
                 ctx.fill();
 
                 // Add glow effect
-                ctx.shadowBlur = 5;
+                ctx.shadowBlur = 10;
                 ctx.shadowColor = p.color;
                 ctx.fill();
                 ctx.shadowBlur = 0;

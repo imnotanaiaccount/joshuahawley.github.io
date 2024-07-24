@@ -77,7 +77,7 @@
 
         let engine, world, runner;
         let squares = [];
-        let squareSize = 80;
+        let squareSize = 40;
         let isGameOver = false;
         let floor;
         let floorColors = [getRandomColor(), getRandomColor(), getRandomColor()];
@@ -150,9 +150,9 @@
             if (isOverlapping(x, y) || y > canvas.height - 60) return;
 
             const square = Matter.Bodies.rectangle(x, y, squareSize, squareSize, {
-                density: 9.001, // kg/m^3
+                density: 0.001, // kg/m^3
                 friction: 0.1,
-                restitution: 9.6, // Bounciness
+                restitution: 0.6, // Bounciness
                 frictionAir: 0.01
             });
             squares.push({ body: square, scale: 0, initialY: y, color: getRandomColor() });
@@ -355,7 +355,7 @@
             maxHeight = 0;
             level = 1;
             gravity = 9.81;
-            squareSize = 80;
+            squareSize = 40;
             warpSpeed = 1;
             Matter.World.clear(world);
             Matter.Engine.clear(engine);

@@ -150,9 +150,9 @@
             if (isOverlapping(x, y) || y > canvas.height - 60) return;
 
             const square = Matter.Bodies.rectangle(x, y, squareSize, squareSize, {
-                density: 0.001, // kg/m^3
+                density: 9.001, // kg/m^3
                 friction: 0.1,
-                restitution: 0.6, // Bounciness
+                restitution: 9.6, // Bounciness
                 frictionAir: 0.01
             });
             squares.push({ body: square, scale: 0, initialY: y, color: getRandomColor() });

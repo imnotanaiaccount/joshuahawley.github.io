@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cosmic Square Stacker</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            border: 1px solid #000;
+        }
+        #mainMenu, #gameOverMenu {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="mainMenu">
+        <h1>Cosmic Square Stacker</h1>
+        <button id="startButton">Start Game</button>
+    </div>
+    <div id="gameOverMenu" style="display: none;">
+        <h1>Game Over</h1>
+        <p>Score: <span id="finalScore"></span></p>
+        <p>Max Height: <span id="maxHeight"></span></p>
+        <p>Level: <span id="finalLevel"></span></p>
+        <button id="restartButton">Restart</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const mainMenu = document.getElementById('mainMenu');
+        const gameOverMenu = document.getElementById('gameOverMenu');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const finalScoreElement = document.getElementById('finalScore');
+        const maxHeightElement = document.getElementById('maxHeight');
+        const finalLevelElement = document.getElementById('finalLevel');
+
+        let engine, world, runner;
+        let squares = [];
+        let squareSize = 40;
+        let isGameOver = false;
+        let floor;
+        let floorColors = [getRandomColor(), getRandomColor(), getRandomColor()];
+        let lastColorChangeTime = 0;
+        let score = 0;
+        let maxHeight = 0;
+        let particles = [];
+        let level = 1;
+        let gravity = 9.81; // Earth's gravity in m/s^2
+        let stars = [];
+        let warpSpeed = 1;
+
+        function setupCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function init() {
+            setupCanvas();
+            engine = Matter.Engine.create({
+                gravity: { x: 0, y: gravity * 0.001 }
+            });
+            world = engine.world;
+            runner = Matter.Runner.create();
+
+            floor = Matter.Bodies.rectangle(canvas.width / 2, canvas.height - 30, canvas.width, 60, { isStatic: true });
+            Matter.World.add(world, floor);
+
+            Matter.Events.on(engine, 'afterUpdate', checkGameOver);
+            
+            canvas.addEventListener('click', handleClick);
+            canvas.addEventListener('touchstart', handleTouch, { passive: false });
+
+            createStars();
+
+            Matter.Runner.run(runner, engine);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function createStars() {
+            for (let i = 0; i < 200; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 1,
+                    color: `rgb(${200 + Math.random() * 55}, ${200 + Math.random() * 55}, ${200 + Math.random() * 55})`,
+                    speed: Math.random() * 3 + 1
+                });
+            }
+        }
+
+        function handleClick(event) {
+            if (isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            addSquare(x, y);
+        }
+
+        function handleTouch(event) {
+            if (isGameOver) return;
+            event.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = event.touches[0].clientX - rect.left;
+            const y = event.touches[0].clientY - rect.top;
+            addSquare(x, y);
+        }
+
+        function addSquare(x, y) {
+            if (isOverlapping(x, y) || y > canvas.height - 60) return;
+
+            const square = Matter.Bodies.rectangle(x, y, squareSize, squareSize, {
+                density: 0.001, // kg/m^3
+                friction: 0.1,
+                restitution: 0.6, // Bounciness
+                frictionAir: 0.01
+            });
+            squares.push({ body: square, scale: 0, initialY: y, color: getRandomColor() });
+            Matter.World.add(world, square);
+            score++;
+            createParticles(x, y);
+            updateMaxHeight();
+            checkLevelUp();
+        }
+
+        function isOverlapping(x, y) {
+            for (let square of squares) {
+                const dx = Math.abs(square.body.position.x - x);
+                const dy = Math.abs(square.body.position.y - y);
+                if (dx < squareSize && dy < squareSize) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw space background
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw and update stars
+            for (let star of stars) {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = star.color;
+                ctx.fill();
+
+                star.y += star.speed * warpSpeed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            }
+
+            // Draw floor
+            const gradient = ctx.createLinearGradient(0, canvas.height - 60, canvas.width, canvas.height);
+            gradient.addColorStop(0, floorColors[0]);
+            gradient.addColorStop(0.5, floorColors[1]);
+            gradient.addColorStop(1, floorColors[2]);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+
+            // Change floor colors
+            if (Date.now() - lastColorChangeTime > 500) {
+                floorColors.shift();
+                floorColors.push(getRandomColor());
+                lastColorChangeTime = Date.now();
+            }
+
+            for (let square of squares) {
+                ctx.save();
+                ctx.translate(square.body.position.x, square.body.position.y);
+                ctx.rotate(square.body.angle);
+                square.scale = Math.min(square.scale + 0.1, 1);
+                ctx.scale(square.scale, square.scale);
+                ctx.fillStyle = square.color;
+                ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
+                
+                // Add glow effect
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = square.color;
+                ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
+                ctx.shadowBlur = 0;
+                
+                ctx.restore();
+            }
+
+            updateAndDrawParticles();
+
+            // Draw score and level
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 24px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+            ctx.fillText(`Max Height: ${maxHeight.toFixed(2)}m`, 10, 60);
+            ctx.fillText(`Level: ${level}`, 10, 90);
+
+            if (!isGameOver) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function updateMaxHeight() {
+            let minY = canvas.height;
+            for (let square of squares) {
+                minY = Math.min(minY, square.body.position.y);
+            }
+            const height = (canvas.height - minY - 60) / squareSize;
+            maxHeight = Math.max(maxHeight, height);
+        }
+
+        function checkGameOver() {
+            for (let square of squares) {
+                if (square.body.position.y > canvas.height && 
+                    square.initialY - square.body.position.y > squareSize * 4) {
+                    endGame();
+                    return;
+                }
+                if (square.body.position.x < 0 || square.body.position.x > canvas.width) {
+                    endGame();
+                    return;
+                }
+            }
+        }
+
+        function endGame() {
+            isGameOver = true;
+            gameOverMenu.style.display = 'block';
+            finalScoreElement.textContent = score;
+            maxHeightElement.textContent = maxHeight.toFixed(2) + 'm';
+            finalLevelElement.textContent = level;
+        }
+
+        function getRandomColor() {
+            return `hsl(${Math.random() * 360}, 100%, 50%)`;
+        }
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    radius: Math.random() * 3 + 1,
+                    color: getRandomColor(),
+                    life: 60
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+
+                // Add glow effect
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = p.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function checkLevelUp() {
+            if (score % 10 === 0) {
+                level++;
+                gravity += 0.1;
+                squareSize = Math.max(20, squareSize - 1);
+                engine.world.gravity.y = gravity * 0.001;
+                warpSpeed += 0.5;
+                createLevelUpEffect();
+            }
+        }
+
+        function createLevelUpEffect() {
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    radius: Math.random() * 5 + 2,
+                    color: getRandomColor(),
+                    life: 120
+                });
+            }
+        }
+
+        function startGame() {
+            mainMenu.style.display = 'none';
+            init();
+        }
+
+        function restartGame() {
+            gameOverMenu.style.display = 'none';
+            squares = [];
+            particles = [];
+            isGameOver = false;
+            score = 0;
+            maxHeight = 0;
+            level = 1;
+            gravity = 9.81;
+            squareSize = 40;
+            warpSpeed = 1;
+            Matter.World.clear(world);
+            Matter.Engine.clear(engine);
+            init();
+        }
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', restartGame);
+
+        window.addEventListener('resize', () => {
+            setupCanvas();
+            if (floor) {
+                Matter.Body.setPosition(floor, { x: canvas.width / 2, y: canvas.height - 30 });
+            }
+            createStars();
+        });
+    </script>
+</body>
+</html>

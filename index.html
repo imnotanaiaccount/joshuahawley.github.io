@@ -2,376 +2,409 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cosmic Square Stacker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Square Stacker Extreme</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
         body {
+            font-family: 'Orbitron', sans-serif;
+            background: #000;
+            color: #fff;
             margin: 0;
             padding: 0;
+            overflow: hidden;
+        }
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #000;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
         }
-        #gameCanvas {
-            border: 1px solid #000;
-        }
-        #mainMenu, #gameOverMenu {
+        #starfield {
             position: absolute;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .menu {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff;
+            z-index: 10;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
+            50% { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+            100% { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
         }
         button {
-            background-color: #4CAF50;
+            background: linear-gradient(45deg, #00ffff, #0066ff);
+            color: #000;
             border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
             cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            margin: 10px;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 10px #00ffff;
         }
         button:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
         }
-        button:active {
-            transform: scale(0.95);
+        #gameStats {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+        .hidden {
+            display: none;
+        }
+        #gameCanvas {
+            border: 2px solid #00ffff;
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 20px #00ffff;
+        }
+        #scoresList {
+            list-style-position: inside;
+            padding: 0;
+            text-align: left;
+        }
+        #currentLevel, #currentScore {
+            font-size: 1.5rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="mainMenu">
-        <h1>Cosmic Square Stacker</h1>
-        <button id="startButton">Start Game</button>
+    <div class="container">
+        <canvas id="starfield"></canvas>
+        <div id="mainMenu" class="menu">
+            <h1>Cosmic Square Stacker Extreme</h1>
+            <button id="startGame">Start Game</button>
+            <button id="howToPlay">How to Play</button>
+            <button id="highScores">High Scores</button>
+        </div>
+
+        <div id="gameArea" class="hidden">
+            <canvas id="gameCanvas" width="300" height="500"></canvas>
+            <p>Score: <span id="currentScore">0</span></p>
+            <p>Level: <span id="currentLevel">1</span></p>
+        </div>
+
+        <div id="gameOverMenu" class="menu hidden">
+            <h1>Game Over</h1>
+            <div id="gameStats">
+                <p>Score: <span id="finalScore"></span></p>
+                <p>Max Height: <span id="maxHeight"></span></p>
+                <p>Level: <span id="finalLevel"></span></p>
+                <p>Time Played: <span id="timePlayed"></span></p>
+            </div>
+            <button id="restart">Play Again</button>
+            <button id="shareScore">Share Score</button>
+        </div>
+
+        <div id="howToPlayMenu" class="menu hidden">
+            <h2>How to Play</h2>
+            <p>Stack cosmic squares as high as you can! Click or tap to place each square. The higher you go, the faster and trickier it gets!</p>
+            <p>Reach level 256 to become the Cosmic Master!</p>
+            <button id="backToMain">Back to Main Menu</button>
+        </div>
+
+        <div id="highScoresMenu" class="menu hidden">
+            <h2>High Scores</h2>
+            <ol id="scoresList"></ol>
+            <button id="backToMainFromScores">Back to Main Menu</button>
+        </div>
     </div>
-    <div id="gameOverMenu" style="display: none;">
-        <h1>Game Over</h1>
-        <p>Score: <span id="finalScore"></span></p>
-        <p>Max Height: <span id="maxHeight"></span></p>
-        <p>Level: <span id="finalLevel"></span></p>
-        <button id="restartButton">Restart</button>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // Game variables
+        let canvas, ctx, starfieldCanvas, starfieldCtx;
+        let score = 0;
+        let level = 1;
+        let gameLoop;
+        let startTime;
+        let fallingSquare;
+        let placedSquares = [];
+        let squareSize = 30;
+        let fallSpeed = 5;
+        let gameWidth = 300;
+        let gameHeight = 500;
+        let gravity = 0.5;
+        let bounce = 0.8;
+        let stars = [];
+
+        // DOM elements
         const mainMenu = document.getElementById('mainMenu');
+        const gameArea = document.getElementById('gameArea');
         const gameOverMenu = document.getElementById('gameOverMenu');
-        const startButton = document.getElementById('startButton');
-        const restartButton = document.getElementById('restartButton');
+        const howToPlayMenu = document.getElementById('howToPlayMenu');
+        const highScoresMenu = document.getElementById('highScoresMenu');
+        const currentScoreElement = document.getElementById('currentScore');
+        const currentLevelElement = document.getElementById('currentLevel');
         const finalScoreElement = document.getElementById('finalScore');
         const maxHeightElement = document.getElementById('maxHeight');
         const finalLevelElement = document.getElementById('finalLevel');
+        const timePlayedElement = document.getElementById('timePlayed');
+        const scoresListElement = document.getElementById('scoresList');
 
-        let engine, world, runner;
-        let squares = [];
-        let squareSize = 40;
-        let isGameOver = false;
-        let floor;
-        let floorColors = [getRandomColor(), getRandomColor(), getRandomColor()];
-        let lastColorChangeTime = 0;
-        let score = 0;
-        let maxHeight = 0;
-        let particles = [];
-        let level = 1;
-        let gravity = 9.81; // Earth's gravity in m/s^2
-        let stars = [];
-        let warpSpeed = 1;
+        // Event listeners
+        document.getElementById('startGame').addEventListener('click', startGame);
+        document.getElementById('howToPlay').addEventListener('click', showHowToPlay);
+        document.getElementById('highScores').addEventListener('click', showHighScores);
+        document.getElementById('restart').addEventListener('click', startGame);
+        document.getElementById('shareScore').addEventListener('click', shareScore);
+        document.getElementById('backToMain').addEventListener('click', showMainMenu);
+        document.getElementById('backToMainFromScores').addEventListener('click', showMainMenu);
 
-        function setupCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        function init() {
-            setupCanvas();
-            engine = Matter.Engine.create({
-                gravity: { x: 0, y: gravity * 0.001 }
-            });
-            world = engine.world;
-            runner = Matter.Runner.create();
-
-            floor = Matter.Bodies.rectangle(canvas.width / 2, canvas.height - 30, canvas.width, 60, { isStatic: true });
-            Matter.World.add(world, floor);
-
-            Matter.Events.on(engine, 'afterUpdate', checkGameOver);
-            
-            canvas.addEventListener('click', handleClick);
-            canvas.addEventListener('touchstart', handleTouch, { passive: false });
-
-            createStars();
-
-            Matter.Runner.run(runner, engine);
-            requestAnimationFrame(gameLoop);
-        }
-
-        function createStars() {
+        // Initialize starfield
+        function initStarfield() {
+            starfieldCanvas = document.getElementById('starfield');
+            starfieldCtx = starfieldCanvas.getContext('2d');
+            resizeStarfield();
             for (let i = 0; i < 200; i++) {
                 stars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    radius: Math.random() * 2 + 1,
-                    color: `rgb(${200 + Math.random() * 55}, ${200 + Math.random() * 55}, ${200 + Math.random() * 55})`,
+                    x: Math.random() * starfieldCanvas.width,
+                    y: Math.random() * starfieldCanvas.height,
+                    size: Math.random() * 2,
                     speed: Math.random() * 3 + 1
                 });
             }
+            animateStarfield();
         }
 
-        function handleClick(event) {
-            if (isGameOver) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            addSquare(x, y);
+        function resizeStarfield() {
+            starfieldCanvas.width = window.innerWidth;
+            starfieldCanvas.height = window.innerHeight;
         }
 
-        function handleTouch(event) {
-            if (isGameOver) return;
-            event.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const x = event.touches[0].clientX - rect.left;
-            const y = event.touches[0].clientY - rect.top;
-            addSquare(x, y);
-        }
-
-        function addSquare(x, y) {
-            if (isOverlapping(x, y) || y > canvas.height - 60) return;
-
-            const square = Matter.Bodies.rectangle(x, y, squareSize, squareSize, {
-                density: 0.001, // kg/m^3
-                friction: 0.1,
-                restitution: 0.6, // Bounciness
-                frictionAir: 0.01
-            });
-            squares.push({ body: square, scale: 0, initialY: y, color: getRandomColor() });
-            Matter.World.add(world, square);
-            score++;
-            createParticles(x, y);
-            updateMaxHeight();
-            checkLevelUp();
-        }
-
-        function isOverlapping(x, y) {
-            for (let square of squares) {
-                const dx = Math.abs(square.body.position.x - x);
-                const dy = Math.abs(square.body.position.y - y);
-                if (dx < squareSize && dy < squareSize) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw space background
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw and update stars
-            for (let star of stars) {
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                ctx.fillStyle = star.color;
-                ctx.fill();
-
-                star.y += star.speed * warpSpeed;
-                if (star.y > canvas.height) {
+        function animateStarfield() {
+            starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+            starfieldCtx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                starfieldCtx.beginPath();
+                starfieldCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                starfieldCtx.fill();
+                star.y += star.speed;
+                if (star.y > starfieldCanvas.height) {
                     star.y = 0;
-                    star.x = Math.random() * canvas.width;
+                    star.x = Math.random() * starfieldCanvas.width;
                 }
+            });
+            requestAnimationFrame(animateStarfield);
+        }
+
+        // Game functions
+        function startGame() {
+            hideAllMenus();
+            gameArea.classList.remove('hidden');
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            score = 0;
+            level = 1;
+            placedSquares = [];
+            startTime = Date.now();
+            fallingSquare = createSquare();
+            gameLoop = setInterval(update, 1000 / 60); // 60 FPS
+            canvas.addEventListener('click', placeSquare);
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, gameWidth, gameHeight);
+            drawPlacedSquares();
+            updateFallingSquare();
+            drawFallingSquare();
+            updateScore();
+            checkGameOver();
+        }
+
+        function createSquare() {
+            return {
+                x: Math.random() * (gameWidth - squareSize),
+                y: 0,
+                vy: 0,
+                color: getRandomColor(),
+                rotation: 0,
+                rotationSpeed: Math.random() * 0.2 - 0.1
+            };
+        }
+
+        function updateFallingSquare() {
+            fallingSquare.vy += gravity;
+            fallingSquare.y += fallingSquare.vy;
+            fallingSquare.rotation += fallingSquare.rotationSpeed;
+
+            if (fallingSquare.y + squareSize > gameHeight) {
+                fallingSquare.y = gameHeight - squareSize;
+                fallingSquare.vy *= -bounce;
             }
 
-            // Draw floor
-            const gradient = ctx.createLinearGradient(0, canvas.height - 60, canvas.width, canvas.height);
-            gradient.addColorStop(0, floorColors[0]);
-            gradient.addColorStop(0.5, floorColors[1]);
-            gradient.addColorStop(1, floorColors[2]);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
-
-            // Change floor colors
-            if (Date.now() - lastColorChangeTime > 500) {
-                floorColors.shift();
-                floorColors.push(getRandomColor());
-                lastColorChangeTime = Date.now();
+            // Bounce off walls
+            if (fallingSquare.x < 0 || fallingSquare.x + squareSize > gameWidth) {
+                fallingSquare.x = fallingSquare.x < 0 ? 0 : gameWidth - squareSize;
+                fallingSquare.rotationSpeed *= -1;
             }
+        }
 
-            for (let square of squares) {
+        function drawFallingSquare() {
+            ctx.save();
+            ctx.translate(fallingSquare.x + squareSize / 2, fallingSquare.y + squareSize / 2);
+            ctx.rotate(fallingSquare.rotation);
+            ctx.fillStyle = fallingSquare.color;
+            ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
+            ctx.restore();
+        }
+
+        function drawPlacedSquares() {
+            placedSquares.forEach(square => {
                 ctx.save();
-                ctx.translate(square.body.position.x, square.body.position.y);
-                ctx.rotate(square.body.angle);
-                square.scale = Math.min(square.scale + 0.1, 1);
-                ctx.scale(square.scale, square.scale);
+                ctx.translate(square.x + squareSize / 2, square.y + squareSize / 2);
+                ctx.rotate(square.rotation);
                 ctx.fillStyle = square.color;
                 ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
-                
-                // Add glow effect
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = square.color;
-                ctx.fillRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
-                ctx.shadowBlur = 0;
-                
                 ctx.restore();
-            }
+            });
+        }
 
-            updateAndDrawParticles();
-
-            // Draw score and level
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 24px Arial';
-            ctx.fillText(`Score: ${score}`, 10, 30);
-            ctx.fillText(`Max Height: ${maxHeight.toFixed(2)}m`, 10, 60);
-            ctx.fillText(`Level: ${level}`, 10, 90);
-
-            if (!isGameOver) {
-                requestAnimationFrame(gameLoop);
+        function placeSquare() {
+            placedSquares.push({...fallingSquare});
+            fallingSquare = createSquare();
+            score += 10 * level;
+            if (score >= level * 100) {
+                levelUp();
             }
         }
 
-        function updateMaxHeight() {
-            let minY = canvas.height;
-            for (let square of squares) {
-                minY = Math.min(minY, square.body.position.y);
-            }
-            const height = (canvas.height - minY - 60) / squareSize;
-            maxHeight = Math.max(maxHeight, height);
+        function levelUp() {
+            level++;
+            fallSpeed += 0.5;
+            gravity += 0.05;
+            bounce = Math.min(bounce + 0.01, 0.95);
+            squareSize = Math.max(squareSize - 0.5, 15);
+
+            // Visual effect for level up
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
+            setTimeout(() => ctx.clearRect(0, 0, gameWidth, gameHeight), 100);
+        }
+
+        function updateScore() {
+            currentScoreElement.textContent = score;
+            currentLevelElement.textContent = level;
         }
 
         function checkGameOver() {
-            for (let square of squares) {
-                if (square.body.position.y > canvas.height && 
-                    square.initialY - square.body.position.y > squareSize * 4) {
-                    endGame();
-                    return;
-                }
-                if (square.body.position.x < 0 || square.body.position.x > canvas.width) {
-                    endGame();
-                    return;
-                }
+            if (level >= 256 || getMaxHeight() <= 0) {
+                endGame();
             }
         }
 
         function endGame() {
-            isGameOver = true;
-            gameOverMenu.style.display = 'block';
+            clearInterval(gameLoop);
+            canvas.removeEventListener('click', placeSquare);
+            updateHighScores();
+            showGameOverMenu();
+        }
+
+        function showGameOverMenu() {
+            hideAllMenus();
+            gameOverMenu.classList.remove('hidden');
             finalScoreElement.textContent = score;
-            maxHeightElement.textContent = maxHeight.toFixed(2) + 'm';
+            maxHeightElement.textContent = Math.floor((gameHeight - getMaxHeight()) / squareSize);
             finalLevelElement.textContent = level;
+            timePlayedElement.textContent = getTimePlayed();
+        }
+
+        function getMaxHeight() {
+            return placedSquares.length > 0 ? Math.min(...placedSquares.map(s => s.y)) : gameHeight;
+        }
+
+        function getTimePlayed() {
+            const seconds = Math.floor((Date.now() - startTime) / 1000);
+            return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+        }
+
+        function updateHighScores() {
+            let highScores = JSON.parse(localStorage.getItem('highScores')) || [];
+            highScores.push({score, level, maxHeight: Math.floor((gameHeight - getMaxHeight()) / squareSize)});
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 5); // Keep only top 5 scores
+            localStorage.setItem('highScores', JSON.stringify(highScores));
+        }
+
+        function showHighScores() {
+            hideAllMenus();
+            highScoresMenu.classList.remove('hidden');
+            const highScores = JSON.parse(localStorage.getItem('highScores')) || [];
+            scoresListElement.innerHTML = highScores.map(score => 
+                `<li>Score: ${score.score}, Level: ${score.level}, Max Height: ${score.maxHeight}</li>`
+            ).join('');
+        }
+
+        function showHowToPlay() {
+            hideAllMenus();
+            howToPlayMenu.classList.remove('hidden');
+        }
+
+        function showMainMenu() {
+            hideAllMenus();
+            mainMenu.classList.remove('hidden');
+        }
+
+        function hideAllMenus() {
+            mainMenu.classList.add('hidden');
+            gameArea.classList.add('hidden');
+            gameOverMenu.classList.add('hidden');
+            howToPlayMenu.classList.add('hidden');
+            highScoresMenu.classList.add('hidden');
+        }
+
+        function shareScore() {
+            const text = `I reached level ${level} and scored ${score} points in Cosmic Square Stacker Extreme! Can you beat my score?`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Cosmic Square Stacker Extreme Score',
+                    text: text,
+                    url: window.location.href,
+                }).then(() => console.log('Successful share'))
+                .catch((error) => console.log('Error sharing', error));
+            } else {
+                alert('Share feature not supported. ' + text);
+            }
         }
 
         function getRandomColor() {
-            return `hsl(${Math.random() * 360}, 100%, 50%)`;
-        }
-
-        function createParticles(x, y) {
-            for (let i = 0; i < 20; i++) {
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: (Math.random() - 0.5) * 5,
-                    vy: (Math.random() - 0.5) * 5,
-                    radius: Math.random() * 3 + 1,
-                    color: getRandomColor(),
-                    life: 60
-                });
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
             }
+            return color;
         }
 
-        function updateAndDrawParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-
-                if (p.life <= 0) {
-                    particles.splice(i, 1);
-                    continue;
-                }
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-
-                // Add glow effect
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = p.color;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-        }
-
-        function checkLevelUp() {
-            if (score % 10 === 0) {
-                level++;
-                gravity += 0.1;
-                squareSize = Math.max(20, squareSize - 1);
-                engine.world.gravity.y = gravity * 0.001;
-                warpSpeed += 0.5;
-                createLevelUpEffect();
-            }
-        }
-
-        function createLevelUpEffect() {
-            for (let i = 0; i < 100; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
-                    radius: Math.random() * 5 + 2,
-                    color: getRandomColor(),
-                    life: 120
-                });
-            }
-        }
-
-        function startGame() {
-            mainMenu.style.display = 'none';
-            init();
-        }
-
-        function restartGame() {
-            gameOverMenu.style.display = 'none';
-            squares = [];
-            particles = [];
-            isGameOver = false;
-            score = 0;
-            maxHeight = 0;
-            level = 1;
-            gravity = 9.81;
-            squareSize = 40;
-            warpSpeed = 1;
-            Matter.World.clear(world);
-            Matter.Engine.clear(engine);
-            init();
-        }
-
-        startButton.addEventListener('click', startGame);
-        restartButton.addEventListener('click', restartGame);
-
-        window.addEventListener('resize', () => {
-            setupCanvas();
-            if (floor) {
-                Matter.Body.setPosition(floor, { x: canvas.width / 2, y: canvas.height - 30 });
-            }
-            createStars();
+        // Initialize the game
+        window.addEventListener('load', () => {
+            initStarfield();
+            showMainMenu();
         });
+
+        window.addEventListener('resize', resizeStarfield);
     </script>
 </body>
 </html>

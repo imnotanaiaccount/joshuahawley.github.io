@@ -97,14 +97,10 @@
         <div id="mainMenu" class="menu">
             <h1>Cosmic Square Stacker</h1>
             <button id="startGame">Start Game</button>
-            <button id="howToPlay">How to Play</button>
-            <button id="highScores">High Scores</button>
         </div>
 
         <div id="gameArea" class="hidden">
             <canvas id="gameCanvas" width="300" height="500"></canvas>
-            <p>Score: <span id="currentScore">0</span></p>
-            <p>Level: <span id="currentLevel">1</span></p>
         </div>
 
         <div id="gameOverMenu" class="menu hidden">
@@ -113,22 +109,8 @@
                 <p>Score: <span id="finalScore"></span></p>
                 <p>Max Height: <span id="maxHeight"></span></p>
                 <p>Level: <span id="finalLevel"></span></p>
-                <p>Time Played: <span id="timePlayed"></span></p>
             </div>
-            <button id="restart">Play Again</button>
-            <button id="shareScore">Share Score</button>
-        </div>
-
-        <div id="howToPlayMenu" class="menu hidden">
-            <h2>How to Play</h2>
-            <p>Stack cosmic squares as high as you can! Click or tap to place each square. The higher you go, the faster it gets!</p>
-            <button id="backToMain">Back to Main Menu</button>
-        </div>
-
-        <div id="highScoresMenu" class="menu hidden">
-            <h2>High Scores</h2>
-            <ol id="scoresList"></ol>
-            <button id="backToMainFromScores">Back to Main Menu</button>
+            <button id="restart">Restart</button>
         </div>
     </div>
 
@@ -138,7 +120,6 @@
         let score = 0;
         let level = 1;
         let gameLoop;
-        let startTime;
         let fallingSquare;
         let placedSquares = [];
         let squareSize = 30;
@@ -151,24 +132,13 @@
         const mainMenu = document.getElementById('mainMenu');
         const gameArea = document.getElementById('gameArea');
         const gameOverMenu = document.getElementById('gameOverMenu');
-        const howToPlayMenu = document.getElementById('howToPlayMenu');
-        const highScoresMenu = document.getElementById('highScoresMenu');
-        const currentScoreElement = document.getElementById('currentScore');
-        const currentLevelElement = document.getElementById('currentLevel');
         const finalScoreElement = document.getElementById('finalScore');
         const maxHeightElement = document.getElementById('maxHeight');
         const finalLevelElement = document.getElementById('finalLevel');
-        const timePlayedElement = document.getElementById('timePlayed');
-        const scoresListElement = document.getElementById('scoresList');
 
         // Event listeners
         document.getElementById('startGame').addEventListener('click', startGame);
-        document.getElementById('howToPlay').addEventListener('click', showHowToPlay);
-        document.getElementById('highScores').addEventListener('click', showHighScores);
         document.getElementById('restart').addEventListener('click', startGame);
-        document.getElementById('shareScore').addEventListener('click', shareScore);
-        document.getElementById('backToMain').addEventListener('click', showMainMenu);
-        document.getElementById('backToMainFromScores').addEventListener('click', showMainMenu);
 
         // Initialize starfield
         function initStarfield() {
@@ -215,9 +185,7 @@
             ctx = canvas.getContext('2d');
             score = 0;
             level = 1;
-            fallSpeed = 2;
             placedSquares = [];
-            startTime = Date.now();
             fallingSquare = createSquare();
             gameLoop = setInterval(update, 1000 / 60); // 60 FPS
             canvas.addEventListener('click', placeSquare);
@@ -228,7 +196,6 @@
             drawPlacedSquares();
             updateFallingSquare();
             drawFallingSquare();
-            updateScore();
             checkGameOver();
         }
 
@@ -270,23 +237,11 @@
         function placeSquare() {
             placedSquares.push({...fallingSquare});
             fallingSquare = createSquare();
-            score += 10;
-            if (score % 100 === 0) {
+            score++;
+            if (score % 10 === 0) {
                 level++;
                 fallSpeed += 0.5;
-                levelUpAnimation();
             }
-        }
-
-        function levelUpAnimation() {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.fillRect(0, 0, gameWidth, gameHeight);
-            setTimeout(() => ctx.clearRect(0, 0, gameWidth, gameHeight), 100);
-        }
-
-        function updateScore() {
-            currentScoreElement.textContent = score;
-            currentLevelElement.textContent = level;
         }
 
         function checkGameOver() {
@@ -298,7 +253,6 @@
         function endGame() {
             clearInterval(gameLoop);
             canvas.removeEventListener('click', placeSquare);
-            updateHighScores();
             showGameOverMenu();
         }
 
@@ -308,65 +262,16 @@
             finalScoreElement.textContent = score;
             maxHeightElement.textContent = Math.floor((gameHeight - getMaxHeight()) / squareSize);
             finalLevelElement.textContent = level;
-            timePlayedElement.textContent = getTimePlayed();
         }
 
         function getMaxHeight() {
             return placedSquares.length > 0 ? Math.min(...placedSquares.map(s => s.y)) : gameHeight;
         }
 
-        function getTimePlayed() {
-            const seconds = Math.floor((Date.now() - startTime) / 1000);
-            return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-        }
-
-        function updateHighScores() {
-            let highScores = JSON.parse(localStorage.getItem('highScores')) || [];
-            highScores.push({score, level, maxHeight: Math.floor((gameHeight - getMaxHeight()) / squareSize)});
-            highScores.sort((a, b) => b.score - a.score);
-            highScores = highScores.slice(0, 5); // Keep only top 5 scores
-            localStorage.setItem('highScores', JSON.stringify(highScores));
-        }
-
-        function showHighScores() {
-            hideAllMenus();
-            highScoresMenu.classList.remove('hidden');
-            const highScores = JSON.parse(localStorage.getItem('highScores')) || [];
-            scoresListElement.innerHTML = highScores.map(score => 
-                `<li>Score: ${score.score}, Level: ${score.level}, Max Height: ${score.maxHeight}</li>`
-            ).join('');
-        }
-
-        function showHowToPlay() {
-            hideAllMenus();
-            howToPlayMenu.classList.remove('hidden');
-        }
-
-        function showMainMenu() {
-            hideAllMenus();
-            mainMenu.classList.remove('hidden');
-        }
-
         function hideAllMenus() {
             mainMenu.classList.add('hidden');
             gameArea.classList.add('hidden');
             gameOverMenu.classList.add('hidden');
-            howToPlayMenu.classList.add('hidden');
-            highScoresMenu.classList.add('hidden');
-        }
-
-        function shareScore() {
-            const text = `I scored ${score} points in Cosmic Square Stacker! Can you beat my score?`;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Cosmic Square Stacker Score',
-                    text: text,
-                    url: window.location.href,
-                }).then(() => console.log('Successful share'))
-                .catch((error) => console.log('Error sharing', error));
-            } else {
-                alert('Share feature not supported. ' + text);
-            }
         }
 
         function getRandomColor() {
@@ -385,6 +290,11 @@
         });
 
         window.addEventListener('resize', resizeStarfield);
+
+        function showMainMenu() {
+            hideAllMenus();
+            mainMenu.classList.remove('hidden');
+        }
     </script>
 </body>
 </html>

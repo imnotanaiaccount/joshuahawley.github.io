@@ -86,7 +86,7 @@
         let maxHeight = 0;
         let particles = [];
         let level = 1;
-        let gravity = -99.81; // Earth's gravity in m/s^2
+        let gravity = 9.81; // Earth's gravity in m/s^2
         let stars = [];
         let warpSpeed = 1;
 
@@ -98,7 +98,7 @@
         function init() {
             setupCanvas();
             engine = Matter.Engine.create({
-                gravity: { x: 0, y: gravity * 0.001 }
+                gravity: { x: 0, y: gravity * 0.991 }
             });
             world = engine.world;
             runner = Matter.Runner.create();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Square Stacker Extreme</title>
+    <title>Cosmic Square Stacker</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
@@ -95,7 +95,7 @@
     <div class="container">
         <canvas id="starfield"></canvas>
         <div id="mainMenu" class="menu">
-            <h1>Cosmic Square Stacker Extreme</h1>
+            <h1>Cosmic Square Stacker</h1>
             <button id="startGame">Start Game</button>
             <button id="howToPlay">How to Play</button>
             <button id="highScores">High Scores</button>
@@ -121,8 +121,7 @@
 
         <div id="howToPlayMenu" class="menu hidden">
             <h2>How to Play</h2>
-            <p>Stack cosmic squares as high as you can! Click or tap to place each square. The higher you go, the faster and trickier it gets!</p>
-            <p>Reach level 256 to become the Cosmic Master!</p>
+            <p>Stack cosmic squares as high as you can! Click or tap to place each square. The higher you go, the faster it gets!</p>
             <button id="backToMain">Back to Main Menu</button>
         </div>
 
@@ -143,11 +142,9 @@
         let fallingSquare;
         let placedSquares = [];
         let squareSize = 30;
-        let fallSpeed = 5;
+        let fallSpeed = 2;
         let gameWidth = 300;
         let gameHeight = 500;
-        let gravity = 0.5;
-        let bounce = 0.8;
         let stars = [];
 
         // DOM elements
@@ -218,6 +215,7 @@
             ctx = canvas.getContext('2d');
             score = 0;
             level = 1;
+            fallSpeed = 2;
             placedSquares = [];
             startTime = Date.now();
             fallingSquare = createSquare();
@@ -238,28 +236,15 @@
             return {
                 x: Math.random() * (gameWidth - squareSize),
                 y: 0,
-                vy: 0,
                 color: getRandomColor(),
                 rotation: 0,
-                rotationSpeed: Math.random() * 0.2 - 0.1
+                rotationSpeed: Math.random() * 0.1 - 0.05
             };
         }
 
         function updateFallingSquare() {
-            fallingSquare.vy += gravity;
-            fallingSquare.y += fallingSquare.vy;
+            fallingSquare.y += fallSpeed;
             fallingSquare.rotation += fallingSquare.rotationSpeed;
-
-            if (fallingSquare.y + squareSize > gameHeight) {
-                fallingSquare.y = gameHeight - squareSize;
-                fallingSquare.vy *= -bounce;
-            }
-
-            // Bounce off walls
-            if (fallingSquare.x < 0 || fallingSquare.x + squareSize > gameWidth) {
-                fallingSquare.x = fallingSquare.x < 0 ? 0 : gameWidth - squareSize;
-                fallingSquare.rotationSpeed *= -1;
-            }
         }
 
         function drawFallingSquare() {
@@ -285,20 +270,15 @@
         function placeSquare() {
             placedSquares.push({...fallingSquare});
             fallingSquare = createSquare();
-            score += 10 * level;
-            if (score >= level * 100) {
-                levelUp();
+            score += 10;
+            if (score % 100 === 0) {
+                level++;
+                fallSpeed += 0.5;
+                levelUpAnimation();
             }
         }
 
-        function levelUp() {
-            level++;
-            fallSpeed += 0.5;
-            gravity += 0.05;
-            bounce = Math.min(bounce + 0.01, 0.95);
-            squareSize = Math.max(squareSize - 0.5, 15);
-
-            // Visual effect for level up
+        function levelUpAnimation() {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, 0, gameWidth, gameHeight);
             setTimeout(() => ctx.clearRect(0, 0, gameWidth, gameHeight), 100);
@@ -310,7 +290,7 @@
         }
 
         function checkGameOver() {
-            if (level >= 256 || getMaxHeight() <= 0) {
+            if (fallingSquare.y + squareSize > gameHeight) {
                 endGame();
             }
         }
@@ -376,10 +356,10 @@
         }
 
         function shareScore() {
-            const text = `I reached level ${level} and scored ${score} points in Cosmic Square Stacker Extreme! Can you beat my score?`;
+            const text = `I scored ${score} points in Cosmic Square Stacker! Can you beat my score?`;
             if (navigator.share) {
                 navigator.share({
-                    title: 'Cosmic Square Stacker Extreme Score',
+                    title: 'Cosmic Square Stacker Score',
                     text: text,
                     url: window.location.href,
                 }).then(() => console.log('Successful share'))

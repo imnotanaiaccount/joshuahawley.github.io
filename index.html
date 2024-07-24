@@ -62,6 +62,7 @@
         <p>Max Height: <span id="maxHeight"></span></p>
         <p>Level: <span id="finalLevel"></span></p>
         <button id="restartButton">Restart</button>
+        <button id="shareButton">Share Progress</button>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
     <script>
@@ -71,6 +72,7 @@
         const gameOverMenu = document.getElementById('gameOverMenu');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
+        const shareButton = document.getElementById('shareButton');
         const finalScoreElement = document.getElementById('finalScore');
         const maxHeightElement = document.getElementById('maxHeight');
         const finalLevelElement = document.getElementById('finalLevel');
@@ -150,9 +152,9 @@
             if (isOverlapping(x, y) || y > canvas.height - 60) return;
 
             const square = Matter.Bodies.rectangle(x, y, squareSize, squareSize, {
-                density: 0.001, // kg/m^3
+                density: 0.001 * (1 + level * 0.1), // Increase density with level
                 friction: 0.1,
-                restitution: 0.6, // Bounciness
+                restitution: 0.6 + level * 0.01, // Increase bounciness with level
                 frictionAir: 0.01
             });
             squares.push({ body: square, scale: 0, initialY: y, color: getRandomColor() });
@@ -237,6 +239,15 @@
             ctx.fillText(`Max Height: ${maxHeight.toFixed(2)}m`, 10, 60);
             ctx.fillText(`Level: ${level}`, 10, 90);
 
+            // Apply small random forces to squares periodically
+            if (Math.random() < 0.1) {
+                squares.forEach(square => {
+                    const forceX = (Math.random() - 0.5) * 0.00005 * level;
+                    const forceY = (Math.random() - 0.5) * 0.00005 * level;
+                    Matter.Body.applyForce(square.body, square.body.position, { x: forceX, y: forceY });
+                });
+            }
+
             if (!isGameOver) {
                 requestAnimationFrame(gameLoop);
             }
@@ -319,12 +330,28 @@
         function checkLevelUp() {
             if (score % 10 === 0) {
                 level++;
-                gravity += 0.1;
-                squareSize = Math.max(20, squareSize - 1);
-                engine.world.gravity.y = gravity * 0.001;
-                warpSpeed += 0.5;
+                increaseDifficulty();
                 createLevelUpEffect();
             }
+        }
+
+        function increaseDifficulty() {
+            // Increase gravity
+            gravity = Math.min(20, gravity + 0.2);
+            engine.world.gravity.y = gravity * 0.001;
+
+            // Decrease square size
+            squareSize = Math.max(10, squareSize - 0.5);
+
+            // Increase warp speed (visual effect)
+            warpSpeed = Math.min(10, warpSpeed + 0.2);
+
+            // Add a random force to existing squares
+            squares.forEach(square => {
+                const forceX = (Math.random() - 0.5) * 0.0001 * level;
+                const forceY = (Math.random() - 0.5) * 0.0001 * level;
+                Matter.Body.applyForce(square.body, square.body.position, { x: forceX, y: forceY });
+            });
         }
 
         function createLevelUpEffect() {
@@ -362,8 +389,22 @@
             init();
         }
 
+        function shareProgress() {
+            const shareText = `I reached level ${level} with a score of ${score} and a max height of ${maxHeight.toFixed(2)}m in Cosmic Square Stacker!`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Cosmic Square Stacker',
+                    text: shareText,
+                    url: window.location.href
+                }).catch(console.error);
+            } else {
+                alert('Sharing is not supported on this browser. Here\'s your progress:\n\n' + shareText);
+            }
+        }
+
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
+        shareButton.addEventListener('click', shareProgress);
 
         window.addEventListener('resize', () => {
             setupCanvas();
